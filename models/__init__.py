@@ -12,8 +12,8 @@ from .vgg import *
 # from .preact_resnet import *
 # from .mobilenet import *
 # from .mobilenetv2 import *
-from .vgg_occ_v1 import *
-from .vgg_occ_v2 import *
-from .vgg_occ_v3 import *
-from .vgg_occ_v4_1 import *
-from .vgg_occ_v4_0_4 import *
+from .vgg_occ import *
+from .vgg_scale import *
+from .vgg_occ_1 import *
+from .resnet_occ import *
+from .resnet import *

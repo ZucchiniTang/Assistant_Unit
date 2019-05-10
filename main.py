@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
-
+import time
 import torchvision
 import torchvision.transforms as transforms
 
@@ -52,8 +52,8 @@ classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship'
 
 # Model
 print('==> Building model..')
-net = VGG('VGG19')
-# net = ResNet18()
+#net = VGG('VGG19')
+net = ResNet18()
 # net = PreActResNet18()
 # net = GoogLeNet()
 # net = DenseNet121()
@@ -88,7 +88,7 @@ def train(epoch):
 	train_loss = 0
 	correct = 0
 	total = 0
-	for batch_idx, (inputs, targets) in enumerate(trainloader):
+	for batch_idx, (inputs, targets, occ) in enumerate(trainloader):
 		inputs, targets = inputs.to(device), targets.to(device)
 		optimizer.zero_grad()
 		outputs = net(inputs)
@@ -104,19 +104,19 @@ def train(epoch):
 		total_train_loss = train_loss/(batch_idx+1)
 		total_train_Acc = 100.*(correct/total)
 	print('train Loss:','{:3f}'.format(total_train_loss),'Train Acc:', '{:3f}'.format(total_train_Acc))
-	file = open('log/train.txt','a')
+	# file = open('log/train.txt','a')
 
-		# file.write('train Loss:'),'{:3f}'.format(total_train_loss),'Train Acc:', '{:3f}'.format(total_train_Acc)) 
-		# file.write('\n')
-	file.write('epoch:')
-	file.write('{:d}'.format(epoch))
-	file.write('   ')
-	file.write('train Loss:')
-	file.write('{:3f}'.format(total_train_loss))
-	file.write('   ')
-	file.write('Train Acc:')
-	file.write('{:3f}'.format(total_train_Acc)) 
-	file.write('\n')
+	# 	# file.write('train Loss:'),'{:3f}'.format(total_train_loss),'Train Acc:', '{:3f}'.format(total_train_Acc)) 
+	# 	# file.write('\n')
+	# file.write('epoch:')
+	# file.write('{:d}'.format(epoch))
+	# file.write('   ')
+	# file.write('train Loss:')
+	# file.write('{:3f}'.format(total_train_loss))
+	# file.write('   ')
+	# file.write('Train Acc:')
+	# file.write('{:3f}'.format(total_train_Acc)) 
+	# file.write('\n')
 
 		# progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
 		#    % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
@@ -127,10 +127,18 @@ def test(epoch):
 	test_loss = 0
 	correct = 0
 	total = 0
+	correct_2 = 0
+	
 	with torch.no_grad():
-		for batch_idx, (inputs, targets) in enumerate(testloader):
+		t1 = time.time()
+		t = 0
+		for batch_idx, (inputs, targets, occ) in enumerate(testloader):
 			inputs, targets = inputs.to(device), targets.to(device)
+			t2 = time.time()
 			outputs = net(inputs)
+			t3 = time.time()
+			t_1 = t3-t2
+			t += t_1
 			loss = criterion(outputs, targets)
 
 			test_loss += loss.item()
@@ -140,19 +148,32 @@ def test(epoch):
 			
 			total_test_loss = test_loss/(batch_idx+1)
 			total_test_Acc = 100.*(correct/total)
-		print('test Loss:', '{:3f}'.format(total_test_loss),'   ','test Acc:', '{:3f}'.format(total_test_Acc))
-		file = open('log/test.txt','a')
-			#file.write('test Loss:', '{:3f}'.format(total_test_loss),'   ','test Acc:', '{:3f}'.format(total_test_Acc))
+			#_, predicted_2 = torch.topk(outputs,2)
+
+			#correct_2 += predicted_2[:,0].eq(targets).sum().item()
+			#correct_2 += predicted_2[:,1].eq(targets).sum().item()
+			#total_test_Acc2 = 100.*(correct_2/total)
+		t4 = time.time()
+		t_2 = t4 - t1
+		print('test Loss:', '{:3f}'.format(total_test_loss)
+		,'   ','test Acc:', '{:3f}'.format(total_test_Acc),'   ',
+		 'time_batch:', '{:3f}'.format(t_1),
+		 '   ', 'time_epoch:', '{:3f}'.format(t_2), '   ', 'time_epoch/net:', '{:3f}'.format(t))
+
+
+		 #'test_top2 Acc:', '{:3f}'.format(total_test_Acc2))
+		# file = open('log/test.txt','a')
+		# 	#file.write('test Loss:', '{:3f}'.format(total_test_loss),'   ','test Acc:', '{:3f}'.format(total_test_Acc))
 		
-		file.write('epoch:')
-		file.write('{:d}'.format(epoch))
-		file.write('   ')	
-		file.write('Test Loss:')
-		file.write('{:3f}'.format(total_test_loss))
-		file.write('   ')
-		file.write('test Acc:')
-		file.write('{:3f}'.format(total_test_Acc)) 
-		file.write('\n')
+		# file.write('epoch:')
+		# file.write('{:d}'.format(epoch))
+		# file.write('   ')	
+		# file.write('Test Loss:')
+		# file.write('{:3f}'.format(total_test_loss))
+		# file.write('   ')
+		# file.write('test Acc:')
+		# file.write('{:3f}'.format(total_test_Acc)) 
+		# file.write('\n')
 
 			# progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
 			#    % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
@@ -160,7 +181,7 @@ def test(epoch):
 	# Save checkpoint.
 	acc = 100.*correct/total
 	if acc > best_acc:
-		print('Saving..')
+		print('Saving..Saving..Saving..Saving..Saving..')
 		state = {
 			'net': net.state_dict(),
 			'acc': acc,
@@ -168,7 +189,7 @@ def test(epoch):
 		}
 		if not os.path.isdir('checkpoint'):
 			os.mkdir('checkpoint')
-		torch.save(state, './checkpoint/ckpt.t7')
+		torch.save(state, './checkpoint/ckpt_ef.t7')
 		best_acc = acc
 
 
