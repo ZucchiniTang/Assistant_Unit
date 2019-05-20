@@ -14,7 +14,7 @@ from models import *
 import torchvision
 import torchvision.transforms as transforms
 #from OCC_CIFAR10 import OCC_CIFAR10
-from OCC_CIFAR10_1 import CIFAR10
+#from OCC_CIFAR10_1 import CIFAR10
 import argparse
 import transforms
 from utils import Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig
@@ -47,16 +47,17 @@ start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 # Data
 print('==> Preparing data..')
 transform_train = transforms.Compose([
-#    transforms.RandomCrop(32, padding=4),
+    #transforms.RandomCrop(32, padding=4),
     transforms.RandomHorizontalFlip(),
     transforms.ToTensor(),
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    transforms.RandomErasing(probability = 0.5, sh = 0.4, r1 = 0.1, )
 ])
 
 transform_test = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    transforms.RandomErasing(probability = 0.5, sh = 0.4, r1 = 0.1, )
+    transforms.RandomErasing(probability = 1.0, sh = 0.4, r1 = 0.1, )
 ])
 #trainset = OCC_CIFAR10(root='data', train=True, download=pythonFalse, transform=transform_train)
 trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=False, transform=transform_train)
@@ -110,7 +111,8 @@ def train(epoch):
 	correct = 0
 	total = 0
 	for batch_idx, (inputs, targets) in enumerate(trainloader):
-		inputs, targets = inputs.to(device), targets.to(device)
+		inputs = inputs[0]
+		inputs, targets = inputs[0].to(device), targets.to(device)
 		optimizer.zero_grad()
 		outputs = net(inputs)
 		loss = criterion(outputs, targets)

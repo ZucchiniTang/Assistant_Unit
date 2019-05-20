@@ -62,7 +62,7 @@ transform_train = transforms.Compose([
 transform_test = transforms.Compose([
 	 transforms.ToTensor(),
 	 transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-	 transforms.RandomErasing(probability = 0.5, sh = 0.4, r1 = 0.1, ),
+	 transforms.RandomErasing(probability = 1.0, sh = 0.4, r1 = 0.1, ),
 ])
 # trainset without transform is a tuple(didn't shuffle yet) [data, target, occludes]
 trainset = CIFAR10(root='data', train=True, download=False, transform=transform_train)
@@ -70,14 +70,14 @@ trainset = CIFAR10(root='data', train=True, download=False, transform=transform_
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=128, shuffle=True, num_workers=2)
 testset = CIFAR10(root='data', train=False, download=False, transform=transform_test)
 #testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
-testloader = torch.utils.data.DataLoader(testset, batch_size=128, shuffle=True, num_workers=2)
+testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=True, num_workers=2)
 
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
 
 # Model
 print('==> Building model..')
-net = VGG_OCC('VGG16_v4_0')
+net = VGG_OCC('VGG16')
 # net = ResNet18_occ()
 # net = PreActResNet18()
 # net = GoogLeNet()
@@ -122,20 +122,25 @@ def train(epoch):
 
 		inputs, targets,occludes = inputs[0].to(device), targets.to(device), occludes.to(device)
 		
+		
 		outputs = net(inputs)
 		outputs_occ = outputs[:,0:2]
 		outputs_class = outputs[:,2:12]
 		loss1 = criterion1(outputs_class, targets)
 		loss2 = criterion1(outputs_occ, occludes)
-		loss = 4.0*loss1+loss2
-		
+		loss = 4.0*loss1+1.0*loss2
 		optimizer.zero_grad()
 		loss.backward()
 		optimizer.step()
 
 		train_loss += loss.item()
-		_, predicted = outputs_class.max(1)
+		_, predicted = outputs_class.max(1)		
 		_, predicted_occ = outputs_occ.max(1)
+		# if epoch >= 0 and batch_idx == 77:
+		# 	print('aaa:',outputs_class.max(1))
+		# 	print('aaa1:',targets)
+		# 	print('bbb:',outputs_occ.max(1))
+		# 	print('bbb1:',occludes)
 		total += targets.size(0)
 		correct += predicted.eq(targets).sum().item()
 		correct_occ += predicted_occ.eq(occludes).sum().item()
@@ -180,11 +185,18 @@ def test(epoch):
 			_, predicted_occ = outputs_occ.max(1)
 			total += targets.size(0)
 			correct += predicted.eq(targets).sum().item()
-			correct_occ += predicted_occ.eq(occludes).sum().item()
-			
+			correct_occ += predicted_occ.eq(occludes).sum().item()	
+
 			total_test_loss = test_loss/(batch_idx+1)
 			total_test_Acc = 100.*(correct/total)
 			total_occ_test_Acc = 100.*(correct_occ/total)
+
+			if epoch >= 11 and batch_idx == 77:
+				# print('aaa_test:',outputs_class.max(1))
+				# print('aaa1_test:',targets)
+				# print('bbb_test:',outputs_occ.max(1))
+				# print('bbb1_test:',occludes)
+				print('test_occ_Acc:',total_occ_test_Acc)
 
 		t4 = time.time()
 		t_2 = t4 - t1
